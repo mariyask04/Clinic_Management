@@ -42,4 +42,4 @@ const prescriptionSchema = new Schema({
 
 }, { timestamps: true });
 
-export const PrescriptionModel = model("Prescription", prescriptionSchema);
+export const Prescription = model("Prescription", prescriptionSchema);

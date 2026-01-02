@@ -21,7 +21,9 @@ const userSchema = new Schema({
         type : String,
         enum : ["doctor","receptionist"],
         required : true
-    }
+    },
+    otp:String,
+    otpExpiry:Date
 },{timestamps : true});
 
 export const User = model("User",userSchema)

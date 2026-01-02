@@ -26,4 +26,4 @@ const billSchema = new Schema({
   }
 }, { timestamps: true });
 
-export const BillModel = model("Bill", billSchema);
+export const Bill = model("Bill", billSchema);

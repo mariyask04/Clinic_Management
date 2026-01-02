@@ -1,64 +1,64 @@
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import { User } from "../models/User.model.js";
+import { Prescription } from "../models/Prescription.model.js";
+import { Token } from "../models/Token.model.js";
 
-const register = async (req, res) => {
+const writePrescription = async (req, res) => {
   try {
-    const { fullName, email, password, phone } = req.body;
+    const doctorId = req.user.userId;
+    const { patientId, tokenId, diagnosis, medicines, advice, followUpDate } = req.body;
 
-    if (!fullName || !email || !password || !phone) {
+    if (!patientId || !tokenId) {
       return res.status(400).json({
         success: false,
-        message: "Full name, email, password and phone are required"
+        message: "Patient and token are required"
       });
     }
 
-    const existingDoctor = await User.findOne({ email });
-    if (existingDoctor) {
-      return res.status(400).json({
+    const token = await Token.findById(tokenId);
+    if (!token) {
+      return res.status(404).json({
         success: false,
-        message: "Doctor already exists with this email"
+        message: "Token not found"
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    if (token.status !== "in_consultation") {
+      return res.status(400).json({
+        success: false,
+        message: "Consultation not active"
+      });
+    }
 
-    const doctor = await User.create({
-      fullName,
-      email,
-      password: hashedPassword,
-      phone,
-      role: "doctor"
+    const existingPrescription = await Prescription.findOne({ token: tokenId });
+    if (existingPrescription) {
+      return res.status(400).json({
+        success: false,
+        message: "Prescription already exists"
+      });
+    }
+
+    const prescription = await Prescription.create({
+      patient: patientId,
+      doctor: doctorId,
+      token: tokenId,
+      diagnosis,
+      medicines,
+      advice,
+      followUpDate
     });
 
-    const token = jwt.sign(
-      {
-        userId: doctor._id,
-        role: doctor.role
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+    token.status = "completed";
+    await token.save();
 
     res.status(201).json({
       success: true,
-      message: "Doctor registered successfully",
-      token,
-      data: {
-        id: doctor._id,
-        fullName: doctor.fullName,
-        email: doctor.email,
-        role: doctor.role
-      }
+      message: "Prescription saved successfully",
+      prescription
     });
 
   } catch (error) {
-    console.error("Error registering doctor:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal Server Error"
-    });
+    console.error("Write Prescription Error:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
 
-export { register };
+export { writePrescription };
