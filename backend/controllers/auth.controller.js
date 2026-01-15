@@ -5,18 +5,19 @@ import { sendEmail } from '../utils/sendEmail.js';
 
 const register = async (req, res) => {
     try {
-        const { fullName, email, password, role } = req.body;
-        if (!fullName || !email || !password || !role) {
+        const { fullName, email, phone, password, role } = req.body;
+        if (!fullName || !email || !phone || !password || !role) {
             return res.status(400).json({ success: false, message: "For registration full name, email, password and role are required." })
         }
-        const existingUser = await User.findOne({ email });
+        const existingUser = await User.findOne({ email, role });
         if (existingUser) {
-            return res.status(400).json({ success: false, message: "User with this emailalready exsists" });
+            return res.status(400).json({ success: false, message: "User with this email already exsists" });
         }
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = new User({
             fullName,
             email,
+            phone,
             password: hashedPassword,
             role
         });
@@ -52,6 +53,50 @@ const login = async (req, res) => {
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 }
+
+const getProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await User.findById(userId).select("-password -otp -otpExpiry");
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+        res.status(200).json({ message: "Profile fetched successfully", user });
+    } catch (error) {
+        console.error("Get Profile Error:", error);
+        return res.status(500).json({ message: "Server error", error: error.message });
+    }
+}
+
+const updateProfile = async (req, res) => {
+    try {
+        const userId = req.user.id; // Added by verifyToken middleware
+        const { fullName, email, phone } = req.body;
+
+        // Check if email already exists for another user
+        const emailExists = await User.findOne({ email, _id: { $ne: userId } });
+        if (emailExists) {
+            return res.status(400).json({ message: "Email is already in use by another user." });
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { fullName, email, phone },
+            { new: true, runValidators: true, select: "-password -__v" }
+        );
+
+        return res.status(200).json({
+            message: "Profile updated successfully",
+            user: updatedUser,
+        });
+    } catch (error) {
+        console.error("Update Profile Error:", error);
+        return res.status(500).json({
+            message: "Server error while updating profile",
+            error: error.message,
+        });
+    }
+};
 
 const sendOtp = async (req, res) => {
     try {
@@ -122,6 +167,8 @@ const resetPassword = async (req, res) => {
 export {
     register,
     login,
+    getProfile,
+    updateProfile,
     sendOtp,
     resetPassword
 }
