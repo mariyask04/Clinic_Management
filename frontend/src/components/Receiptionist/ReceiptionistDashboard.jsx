@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import Navbar from "../Navbar.jsx";
-import ReceiptionistSidebar from "./ReceiptionistSidebar.jsx";
+import ReceiptionistSidebar from "../Sidebar.jsx";
 import PatientsTable from "./PatientsTable.jsx";
 import BillGeneration from "./BillGeneration.jsx";
-import History from "./History.jsx";
+import History from "../History.jsx";
 import { useSearchParams } from "next/navigation.js";
 import AddPatientModal from "./AddPatientModal.jsx";
 

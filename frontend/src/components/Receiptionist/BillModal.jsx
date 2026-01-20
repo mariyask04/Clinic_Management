@@ -1,8 +1,10 @@
 
 import { useState } from "react";
 import { User, FileText, X, DollarSign, Plus, Trash2 } from "lucide-react";
+import axios from "axios";
 
 function BillModal({ patient, onClose }) {
+  const backend = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   const [billItems, setBillItems] = useState([
     { description: "Consultation Fee", amount: 500 }
   ]);
@@ -27,13 +29,41 @@ function BillModal({ patient, onClose }) {
     return billItems.reduce((sum, item) => sum + item.amount, 0);
   };
 
-  const handleGenerateBill = () => {
+  const handleGenerateBill = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const payload = {
+        patientId: patient.id,
+        tokenId: patient.tokenId,
+        items: billItems
+      };
+
+      const res = await axios.post(`${backend}/receptionist/generate-bill`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+      if (!res.data.success) {
+        alert("Failed to generate bill");
+        return;
+      }
+
+      // After saving the bill in database → continue printing
+    } catch (error) {
+      console.error(error);
+      alert("Error generating bill");
+      return;
+    }
+
     // Create a new window for the bill
     const printWindow = window.open('', '_blank');
-    const billDate = new Date().toLocaleDateString('en-IN', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const billDate = new Date().toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
     const billNumber = `BILL-${Date.now()}`;
 
@@ -281,12 +311,12 @@ function BillModal({ patient, onClose }) {
               <div class="section-title">Prescription Details</div>
               <div class="prescription-box">
                 <h4>Diagnosis</h4>
-                <p>${patient.prescription.diagnosis}</p>
+                <p>${patient.diagnosis}</p>
               </div>
 
-              ${patient.prescription.medications.length > 0 ? `
+              ${patient.medicines.length > 0 ? `
                 <h4 style="margin-bottom: 10px; color: #1e293b; font-size: 13px;">Medications Prescribed:</h4>
-                ${patient.prescription.medications.map(med => `
+                ${patient.medicines.map(med => `
                   <div class="medication-item">
                     <strong>${med.name}</strong>
                     <span>${med.dosage} - ${med.duration}</span>
@@ -294,7 +324,7 @@ function BillModal({ patient, onClose }) {
                 `).join('')}
               ` : ''}
 
-              ${patient.prescription.tests.length > 0 ? `
+              ${patient.tests?.length > 0 ? `
                 <h4 style="margin: 15px 0 10px; color: #1e293b; font-size: 13px;">Tests Prescribed:</h4>
                 <p style="color: #475569; font-size: 13px;">${patient.prescription.tests.join(', ')}</p>
               ` : ''}
@@ -349,7 +379,7 @@ function BillModal({ patient, onClose }) {
     `);
 
     printWindow.document.close();
-    
+
     // Wait for content to load, then trigger print
     setTimeout(() => {
       printWindow.print();
@@ -402,19 +432,19 @@ function BillModal({ patient, onClose }) {
               <FileText className="w-4 h-4" />
               Prescription Details
             </h4>
-            
+
             {/* Diagnosis */}
             <div className="mb-4">
               <span className="text-sm font-medium text-gray-700">Diagnosis:</span>
-              <p className="text-gray-900">{patient.prescription.diagnosis}</p>
+              <p className="text-gray-900">{patient.diagnosis}</p>
             </div>
 
             {/* Medications */}
-            {patient.prescription.medications.length > 0 && (
+            {patient.medicines.length > 0 && (
               <div className="mb-4">
                 <span className="text-sm font-medium text-gray-700">Medications:</span>
                 <div className="mt-2 space-y-2">
-                  {patient.prescription.medications.map((med, index) => (
+                  {patient.medicines.map((med, index) => (
                     <div key={index} className="bg-white p-3 rounded border border-gray-200">
                       <p className="font-medium text-gray-900">{med.name}</p>
                       <p className="text-sm text-gray-600">
@@ -427,7 +457,7 @@ function BillModal({ patient, onClose }) {
             )}
 
             {/* Tests */}
-            {patient.prescription.tests.length > 0 && (
+            {patient.tests?.length > 0 && (
               <div>
                 <span className="text-sm font-medium text-gray-700">Tests Prescribed:</span>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -441,7 +471,8 @@ function BillModal({ patient, onClose }) {
                   ))}
                 </div>
               </div>
-            )}
+            )
+            }
           </div>
 
           {/* Bill Items */}

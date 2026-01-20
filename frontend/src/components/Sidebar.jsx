@@ -1,13 +1,25 @@
 import { X, Users, DollarSign, History } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-function ReceiptionistSidebar({ activeTab, onClose, isMobileOpen }) {
-    const navItems = [
+function Sidebar({ activeTab, onClose, isMobileOpen }) {
+    const [role, setRole] = useState("");
+
+    useEffect(() => {
+        const userRole = localStorage.getItem("role");
+        setRole(userRole);
+    }, []);
+
+    const baseItems = [
         { id: "patients", label: "Patients List", Icon: Users },
-        { id: "billing", label: "Bill Generation", Icon: DollarSign },
         { id: "history", label: "History", Icon: History }
     ];
+
+    const navItems =
+        role === "doctor"
+            ? baseItems
+            : [...baseItems, { id: "billing", label: "Bill Generation", Icon: DollarSign }];
 
     const router = useRouter();
 
@@ -53,6 +65,7 @@ function ReceiptionistSidebar({ activeTab, onClose, isMobileOpen }) {
                     {navItems.map((item) => {
                         const IconComponent = item.Icon;
                         return (
+
                             <button
                                 key={item.id}
                                 onClick={() => handleNavClick(item.id)}
@@ -76,4 +89,4 @@ function ReceiptionistSidebar({ activeTab, onClose, isMobileOpen }) {
     );
 }
 
-export default ReceiptionistSidebar;
+export default Sidebar;

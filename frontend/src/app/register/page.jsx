@@ -36,6 +36,7 @@ export default function RegisterPage() {
                 email: formData.email,
                 password: formData.password,
                 role: formData.role,
+                phone: formData.phone,
             });
             setMsg(res.data.message);
             setMsgType("success");

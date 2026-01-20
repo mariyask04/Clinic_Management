@@ -2,115 +2,12 @@
 
 import { use, useState, useEffect } from "react";
 import {
-    User, Mail, Phone, Calendar, MapPin, Hash,
+    Mail, Phone, Calendar, MapPin, Hash,
     FileText, Pill, DollarSign, Clock, ArrowLeft,
-    Stethoscope, CreditCard, Activity
+    Stethoscope, CreditCard, Activity, Plus
 } from "lucide-react";
 import axios from "axios";
-
-// Mock data - Replace with actual API call
-const mockPatientData = {
-    patient: {
-        id: "1",
-        fullName: "John Smith",
-        email: "john.smith@example.com",
-        phone: "+1 (555) 123-4567",
-        age: 45,
-        gender: "male",
-        address: "123 Main Street, New York, NY 10001",
-        createdAt: "2025-06-15T10:30:00Z"
-    },
-    tokens: [
-        {
-            id: "t1",
-            tokenNumber: "T-001",
-            visitDate: "2026-01-11",
-            status: "completed",
-            createdAt: "2026-01-11T09:00:00Z"
-        },
-        {
-            id: "t2",
-            tokenNumber: "T-045",
-            visitDate: "2025-12-20",
-            status: "completed",
-            createdAt: "2025-12-20T10:00:00Z"
-        }
-    ],
-    prescriptions: [
-        {
-            id: "p1",
-            tokenId: "t1",
-            tokenNumber: "T-001",
-            doctor: {
-                name: "Dr. Sarah Johnson",
-                specialization: "General Physician"
-            },
-            diagnosis: "Seasonal Flu with mild fever",
-            medicines: [
-                {
-                    name: "Paracetamol 500mg",
-                    dosage: "1 tablet",
-                    frequency: "Twice daily",
-                    duration: "5 days"
-                },
-                {
-                    name: "Cough Syrup",
-                    dosage: "10ml",
-                    frequency: "Thrice daily",
-                    duration: "7 days"
-                }
-            ],
-            advice: "Rest well, drink plenty of fluids, and avoid cold foods. Come for follow-up if symptoms persist.",
-            followUpDate: "2026-01-18",
-            createdAt: "2026-01-11T10:30:00Z"
-        },
-        {
-            id: "p2",
-            tokenId: "t2",
-            tokenNumber: "T-045",
-            doctor: {
-                name: "Dr. Michael Chen",
-                specialization: "Cardiologist"
-            },
-            diagnosis: "Hypertension - Regular checkup",
-            medicines: [
-                {
-                    name: "Amlodipine 5mg",
-                    dosage: "1 tablet",
-                    frequency: "Once daily (morning)",
-                    duration: "30 days"
-                }
-            ],
-            advice: "Monitor blood pressure daily. Reduce salt intake and exercise regularly.",
-            followUpDate: "2026-01-20",
-            createdAt: "2025-12-20T11:00:00Z"
-        }
-    ],
-    bills: [
-        {
-            id: "b1",
-            tokenId: "t1",
-            tokenNumber: "T-001",
-            consultationFee: 500,
-            medicineFee: 250,
-            otherCharges: 100,
-            totalAmount: 850,
-            paymentStatus: "paid",
-            createdAt: "2026-01-11T11:00:00Z"
-        },
-        {
-            id: "b2",
-            tokenId: "t2",
-            tokenNumber: "T-045",
-            consultationFee: 800,
-            medicineFee: 450,
-            otherCharges: 50,
-            totalAmount: 1300,
-            paymentStatus: "paid",
-            createdAt: "2025-12-20T12:00:00Z"
-        }
-    ]
-};
+import AddPrescriptionModal from "@/components/Doctor/AddPrescriptionModal";
 
 function LoadingSkeleton() {
     return (
@@ -134,38 +31,61 @@ export default function PatientDetailPage({ params }) {
     const [loading, setLoading] = useState(true);
     const [patientData, setPatientData] = useState(null);
     const [activeTab, setActiveTab] = useState("overview");
+    const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+    const [selectedTokenId, setSelectedTokenId] = useState(null);
+
+    const [role, setRole] = useState("");
+
+    useEffect(() => {
+        const userRole = localStorage.getItem("role");
+        setRole(userRole);
+    }, []);
 
     const backend = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
-    useEffect(() => {
-        const fetchPatientData = async () => {
-            try {
-                setLoading(true);
+    const fetchPatientData = async () => {
+        try {
+            setLoading(true);
 
-                const response = await axios.get(`${backend}/receptionist/patient/${patientId}`);
+            const response = await axios.get(`${backend}/patient/full-details/${patientId}`);
 
-                if (response.data.success) {
-                    setPatientData({
-                        patient: response.data.patient,
-                        tokens: response.data.tokens,
-                        prescriptions: response.data.prescriptions,
-                        bills: response.data.bills
-                    });
-                } else {
-                    setPatientData(null);
-                }
-
-            } catch (error) {
-                console.error("Error fetching patient data:", error);
+            if (response.data.success) {
+                setPatientData({
+                    patient: response.data.patient,
+                    tokens: response.data.tokens,
+                    prescriptions: response.data.prescriptions,
+                    bills: response.data.bills
+                });
+            } else {
                 setPatientData(null);
-            } finally {
-                setLoading(false);
             }
-        };
 
+        } catch (error) {
+            console.error("Error fetching patient data:", error);
+            setPatientData(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         fetchPatientData();
     }, [patientId]);
 
+    const handleUpdateStatus = async (tokenId) => {
+        try {
+            const response = await axios.put(
+                `${backend}/patient/status/${tokenId}`,
+                { status: "completed" }
+            );
+
+            alert("Status updated to Completed!");
+            fetchPatientData(); // refresh UI
+        } catch (error) {
+            console.error("Status update failed:", error);
+            alert(error.response?.data?.message || "Something went wrong");
+        }
+    };
 
     if (loading) {
         return <LoadingSkeleton />;
@@ -183,6 +103,7 @@ export default function PatientDetailPage({ params }) {
     }
 
     const { patient, tokens, prescriptions, bills } = patientData;
+    const latestToken = tokens?.[0] || null;
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -267,6 +188,16 @@ export default function PatientDetailPage({ params }) {
                                 </div>
                             </div>
                         </div>
+                        {role === "doctor" && latestToken?.status !== "completed" && (
+                            <div className="mt-6 flex justify-end">
+                                <button
+                                    onClick={() => handleUpdateStatus(latestToken._id)}
+                                    className="px-4 py-2 bg-teal-600 text-white font-medium rounded-lg shadow hover:bg-teal-700 transition"
+                                >
+                                    Mark as Completed
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
@@ -387,8 +318,7 @@ export default function PatientDetailPage({ params }) {
                                                         ? "bg-gray-100 text-gray-800"
                                                         : "bg-yellow-100 text-yellow-800"
                                                     }`}>
-                                                    {token.status.replace('_', ' ').toUpperCase()}
-                                                </span>
+                                                    {(token.status || '').replace('_', ' ').toUpperCase()}                                                </span>
                                             </div>
                                         </div>
                                     ))}
@@ -399,6 +329,23 @@ export default function PatientDetailPage({ params }) {
                         {/* Prescriptions Tab */}
                         {activeTab === "prescriptions" && (
                             <div className="space-y-6">
+                                {/* Add Prescription Button - Only for Doctors */}
+                                {role === "doctor" && (
+                                    <div className="flex justify-end">
+                                        <button
+                                            onClick={() => {
+                                                const latestTokenId = tokens?.[0]?._id;
+                                                setSelectedTokenId(latestTokenId);
+                                                setShowPrescriptionModal(true);
+                                            }}
+                                            className="px-4 py-2 bg-teal-600 text-white font-medium rounded-lg shadow hover:bg-teal-700 transition flex items-center gap-2"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            Add Prescription
+                                        </button>
+                                    </div>
+                                )}
+
                                 {prescriptions.length > 0 ? (
                                     prescriptions.map((prescription) => (
                                         <div key={prescription._id} className="border border-gray-200 rounded-lg overflow-hidden">
@@ -420,7 +367,7 @@ export default function PatientDetailPage({ params }) {
 
                                             <div className="p-4 space-y-4">
                                                 <div className="flex items-start gap-3">
-                                                    <Stethoscope className="w-5 h-5 text-gray-600 mt-1" />
+                                                    <Stethoscope className="w-5 h-5 text-blue-600 mt-1" />
                                                     <div>
                                                         <p className="text-sm font-medium text-gray-700">Doctor</p>
                                                         <p className="text-gray-900">{prescription.doctor.name}</p>
@@ -464,9 +411,9 @@ export default function PatientDetailPage({ params }) {
                                                 )}
 
                                                 {prescription.advice && (
-                                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                                        <p className="text-sm font-medium text-gray-900 mb-1">Doctor's Advice</p>
-                                                        <p className="text-sm text-gray-800">{prescription.advice}</p>
+                                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                                        <p className="text-sm font-medium text-blue-900 mb-1">Doctor's Advice</p>
+                                                        <p className="text-sm text-blue-800">{prescription.advice}</p>
                                                     </div>
                                                 )}
 
@@ -495,6 +442,19 @@ export default function PatientDetailPage({ params }) {
                             </div>
                         )}
 
+                        {/* Add Prescription Modal (GLOBAL LEVEL) */}
+                        {showPrescriptionModal && (
+                            <AddPrescriptionModal
+                                patient={patientData}
+                                tokenId={selectedTokenId}
+                                onClose={() => setShowPrescriptionModal(false)}
+                                onSave={(formData) => {
+                                    console.log("Saved prescription:", formData);
+                                    setShowPrescriptionModal(false);
+                                }}
+                            />
+                        )}
+
                         {/* Bills Tab */}
                         {activeTab === "bills" && (
                             <div className="space-y-6">
@@ -505,20 +465,13 @@ export default function PatientDetailPage({ params }) {
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center gap-3">
                                                         <Hash className="w-4 h-4 text-gray-500" />
-                                                        <span className="font-semibold text-gray-900">{bill.tokenNumber}</span>
+                                                        <span className="font-semibold text-gray-900">{bill.token}</span>
                                                         <span className="text-sm text-gray-600">
-                                                            {new Date(bill.createdAt).toLocaleDateString('en-US', {
-                                                                year: 'numeric',
-                                                                month: 'short',
-                                                                day: 'numeric'
-                                                            })}
+                                                            {new Date(bill.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                                                         </span>
                                                     </div>
-                                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${bill.paymentStatus === "paid"
-                                                        ? "bg-green-100 text-green-800"
-                                                        : "bg-red-100 text-red-800"
-                                                        }`}>
-                                                        {bill.paymentStatus.toUpperCase()}
+                                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                                                        Paid
                                                     </span>
                                                 </div>
                                             </div>
@@ -526,18 +479,12 @@ export default function PatientDetailPage({ params }) {
                                             <div className="p-4">
                                                 <table className="w-full">
                                                     <tbody className="text-sm">
-                                                        <tr className="border-b border-gray-100">
-                                                            <td className="py-2 text-gray-600">Consultation Fee</td>
-                                                            <td className="py-2 text-right font-medium text-gray-900">₹{bill.consultationFee}</td>
-                                                        </tr>
-                                                        <tr className="border-b border-gray-100">
-                                                            <td className="py-2 text-gray-600">Medicine Fee</td>
-                                                            <td className="py-2 text-right font-medium text-gray-900">₹{bill.medicineFee}</td>
-                                                        </tr>
-                                                        <tr className="border-b border-gray-100">
-                                                            <td className="py-2 text-gray-600">Other Charges</td>
-                                                            <td className="py-2 text-right font-medium text-gray-900">₹{bill.otherCharges}</td>
-                                                        </tr>
+                                                        {bill.items.map((item, idx) => (
+                                                            <tr key={idx} className="border-b border-gray-100">
+                                                                <td className="py-2 text-gray-600">{item.description}</td>
+                                                                <td className="py-2 text-right font-medium text-gray-900">₹{item.amount}</td>
+                                                            </tr>
+                                                        ))}
                                                         <tr className="bg-gray-50">
                                                             <td className="py-3 text-gray-900 font-semibold">Total Amount</td>
                                                             <td className="py-3 text-right text-lg font-bold text-gray-900">₹{bill.totalAmount}</td>

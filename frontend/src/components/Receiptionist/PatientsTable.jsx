@@ -7,9 +7,15 @@ function PatientsTable() {
     const [patients, setPatients] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
+    const [role, setRole] = useState("");
     const router = useRouter();
 
     const backend = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+
+    useEffect(() => {
+        const userRole = localStorage.getItem("role");
+        setRole(userRole);
+    }, []);
 
     useEffect(() => {
         fetchTodayPatients();
@@ -18,7 +24,7 @@ function PatientsTable() {
     const fetchTodayPatients = async () => {
         const token = localStorage.getItem("token");
         try {
-            const res = await axios.get(`${backend}/receptionist/patients/today`,
+            const res = await axios.get(`${backend}/patient/today`,
                 {
                     headers: { Authorization: `Bearer ${token}` },
                 });
@@ -46,11 +52,11 @@ function PatientsTable() {
 
     const getStatusColor = (status) => {
         switch (status) {
-            case "Checked In":
-                return "bg-green-100 text-green-800";
-            case "Waiting":
+            case "waiting":
                 return "bg-yellow-100 text-yellow-800";
-            case "Completed":
+            case "in_consultation":
+                return "bg-green-100 text-green-800";
+            case "completed":
                 return "bg-gray-100 text-gray-800";
             default:
                 return "bg-blue-100 text-blue-800";
@@ -77,6 +83,20 @@ function PatientsTable() {
         }
     };
 
+    const handleUpdateStatus = async (tokenId, newStatus) => {
+        try {
+            const res = await axios.put(`${backend}/patient/status/${tokenId}`, {
+                status: newStatus,
+            });
+
+            console.log(res.data);
+            // refresh list etc.
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+
     return (
         <div className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-4">
@@ -96,9 +116,9 @@ function PatientsTable() {
                     className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                     <option value="all">All Status</option>
-                    <option value="Checked In">Checked In</option>
-                    <option value="Waiting">Waiting</option>
-                    <option value="Completed">Completed</option>
+                    <option value="in_consultation">In Consultation</option>
+                    <option value="waiting">Waiting</option>
+                    <option value="completed">Completed</option>
                 </select>
             </div>
 
@@ -166,7 +186,7 @@ function PatientsTable() {
                                             </button>
 
                                             {/* Show Assign Token only if token is NOT available */}
-                                            {patient.tokenNumber === "-" && (
+                                            {patient.tokenNumber === "-" &&  (
                                                 <button
                                                     onClick={() => handleAssignToken(patient.id)}
                                                     className="inline-flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
@@ -174,6 +194,16 @@ function PatientsTable() {
                                                     Assign Token
                                                 </button>
                                             )}
+                                            {/* Update Status → In Consultation (Only for Receptionist) */}
+                                            {patient.tokenNumber !== "-" &&
+                                                patient.status === "waiting" && (
+                                                    <button
+                                                        onClick={() => handleUpdateStatus(patient.tokenId, "in_consultation")}
+                                                        className="inline-flex items-center gap-1 px-3 py-1 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition-colors"
+                                                    >
+                                                        Update Status
+                                                    </button>
+                                                )}
                                         </td>
                                     </tr>
                                 ))

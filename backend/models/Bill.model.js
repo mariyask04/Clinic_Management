@@ -13,17 +13,22 @@ const billSchema = new Schema({
     required: true
   },
 
-  consultationFee: Number,
-  medicineFee: Number,
-  otherCharges: Number,
+  items: [
+    {
+      description: { type: String, required: true },
+      amount: { type: Number, required: true }
+    }
+  ],
 
-  totalAmount: Number,
+  totalAmount: {
+    type: Number,
+    required: true
+  },
 
-  paymentStatus: {
-    type: String,
-    enum: ["pending", "paid"],
-    default: "pending"
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
-}, { timestamps: true });
+});
 
 export const Bill = model("Bill", billSchema);

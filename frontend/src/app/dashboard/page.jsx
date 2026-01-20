@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import DoctorDashboard from "@/components/Doctor/DoctorDashboard";
 import ReceiptionistDashboard from "@/components/Receiptionist/ReceiptionistDashboard";
+import DoctorDashboard from "@/components/Doctor/DoctorDashboard";
 
 export default function DashboardPage() {
   const [role, setRole] = useState("");

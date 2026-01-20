@@ -1,10 +1,10 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
-import ReceiptionistSidebar from "@/components/Receiptionist/ReceiptionistSidebar";
 import { User, Mail, Phone, Briefcase, Edit2, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import Sidebar from "@/components/Sidebar";
 
 export default function ProfilePage() {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -93,13 +93,11 @@ export default function ProfilePage() {
 
     return (
         <div className="flex h-screen bg-gray-50">
-            {role === "receptionist" ? (
-                <ReceiptionistSidebar
-                    activeTab="profile"
-                    isMobileOpen={isMobileMenuOpen}
-                    onClose={() => setIsMobileMenuOpen(false)}
-                />
-            ) : null}
+            <Sidebar
+                activeTab="profile"
+                isMobileOpen={isMobileMenuOpen}
+                onClose={() => setIsMobileMenuOpen(false)}
+            />
 
             <div className="flex-1 flex flex-col overflow-hidden">
                 <Navbar onMenuClick={() => setIsMobileMenuOpen(true)} />
@@ -131,7 +129,7 @@ export default function ProfilePage() {
                             {/* Form */}
                             <div className="p-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    
+
                                     {/* Full Name */}
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-medium text-gray-700 mb-2">

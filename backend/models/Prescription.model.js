@@ -32,6 +32,12 @@ const prescriptionSchema = new Schema({
     }
   ],
 
+  tests: [
+    {
+      type: String
+    }
+  ],
+
   advice: {
     type: String
   },

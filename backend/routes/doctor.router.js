@@ -1,14 +1,14 @@
 import express from "express";
 import { authorizeRoles, protect } from '../middlewares/auth.middleware.js';
-import { writePrescription } from "../controllers/doctor.controller";
+import { createPrescription  } from "../controllers/doctor.controller.js";
 
 const router = express.Router();
 
 router.post(
-    "/write-prescription",
+    "/:patientId/:tokenId",
     protect,
     authorizeRoles("doctor"),
-    writePrescription
+    createPrescription
 )
 
 export default router;

@@ -1,17 +1,10 @@
 import express from 'express';
 import { authorizeRoles, protect } from '../middlewares/auth.middleware.js';
-import { getTodayPatients, getPatientFullDetails, addPatient, getPatientHistory,
-    // editPatient, 
-    removePatient, generateToken, updatePatientStatus, generateBill, markBillAsPaid } from '../controllers/receptionist.controller.js';
+import { addPatient,
+    // editPatient, removePatient, updatePatientStatus,
+    generateToken, generateBill, markBillAsPaid } from '../controllers/receptionist.controller.js';
 
 const router = express.Router();
-
-
-router.get("/patients/today", getTodayPatients);
-
-router.get("/patient/:id", getPatientFullDetails);
-
-router.get("/patients/history", getPatientHistory);
 
 router.post(
     "/add-patient",
@@ -27,12 +20,12 @@ router.post(
 //     editPatient
 // );
 
-router.delete(
-    "/remove-patient/:id",
-    protect,
-    authorizeRoles("receptionist"),
-    removePatient
-);
+// router.delete(
+//     "/remove-patient/:id",
+//     protect,
+//     authorizeRoles("receptionist"),
+//     removePatient
+// );
 
 router.post(
     "/assign-token/:patientId",
@@ -41,12 +34,12 @@ router.post(
     generateToken
 );
 
-router.put(
-    "/update-status/:tokenId",
-    protect,
-    authorizeRoles("receptionist", "doctor"),
-    updatePatientStatus
-);
+// router.put(
+//     "/update-status/:tokenId",
+//     protect,
+//     authorizeRoles("receptionist", "doctor"),
+//     updatePatientStatus
+// );
 
 router.post(
     "/generate-bill",

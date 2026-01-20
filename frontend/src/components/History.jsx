@@ -21,7 +21,7 @@ export default function History() {
     const fetchPatientHistory = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${backend}/receptionist/patients/history`, {
+        const response = await axios.get(`${backend}/patient/history`, {
           params: {
             search: searchTerm,
             date: dateFilter,

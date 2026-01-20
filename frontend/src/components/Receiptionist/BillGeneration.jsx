@@ -1,80 +1,43 @@
 "use client";
 
 import { Search, User, Calendar, Hash, FileText } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import BillModal from "./BillModal.jsx";
-
-const mockCompletedPatients = [
-  {
-    id: 1,
-    fullName: "John Smith",
-    visitDate: "2026-01-11",
-    tokenNumber: "T-001",
-    status: "Completed",
-    prescription: {
-      diagnosis: "Seasonal Flu",
-      medications: [
-        { name: "Paracetamol 500mg", dosage: "Twice daily", duration: "5 days" },
-        { name: "Cough Syrup", dosage: "10ml thrice daily", duration: "7 days" }
-      ],
-      tests: ["Blood Test", "X-Ray Chest"]
-    }
-  },
-  {
-    id: 2,
-    fullName: "Michael Brown",
-    visitDate: "2026-01-11",
-    tokenNumber: "T-003",
-    status: "Completed",
-    prescription: {
-      diagnosis: "Hypertension",
-      medications: [
-        { name: "Amlodipine 5mg", dosage: "Once daily", duration: "30 days" }
-      ],
-      tests: ["ECG", "Blood Pressure Monitoring"]
-    }
-  },
-  {
-    id: 3,
-    fullName: "Emily Davis",
-    visitDate: "2026-01-10",
-    tokenNumber: "-",
-    status: "Completed",
-    prescription: {
-      diagnosis: "Migraine",
-      medications: [
-        { name: "Sumatriptan 50mg", dosage: "As needed", duration: "10 days" }
-      ],
-      tests: []
-    }
-  },
-  {
-    id: 4,
-    fullName: "Jennifer Martinez",
-    visitDate: "2026-01-09",
-    tokenNumber: "-",
-    status: "Completed",
-    prescription: {
-      diagnosis: "Vitamin D Deficiency",
-      medications: [
-        { name: "Vitamin D3 60000 IU", dosage: "Once weekly", duration: "8 weeks" }
-      ],
-      tests: ["Vitamin D Level Test"]
-    }
-  }
-];
+import axios from "axios";
 
 export default function BillGeneration() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredPatients = mockCompletedPatients.filter((patient) => {
-    const matchesSearch =
-      patient.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      patient.tokenNumber.includes(searchTerm) ||
-      patient.visitDate.includes(searchTerm);
+  const backend = process.env.NEXT_PUBLIC_BACKEND_API_URL;
 
-    return matchesSearch;
+  useEffect(() => {
+    fetchPatients();
+  }, [])
+
+  const fetchPatients = async () => {
+    try {
+      const res = await axios.get(`${backend}/patient/completed`);
+
+      if (res.data.success) {
+        setPatients(res.data.patients);
+      }
+    } catch (error) {
+      console.log("Error fetching patients:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredPatients = patients.filter((patient) => {
+    const search = searchTerm.toLowerCase();
+    return (
+      patient.fullName.toLowerCase().includes(search) ||
+      patient.tokenNumber.includes(search) ||
+      patient.visitDate.includes(search)
+    );
   });
 
   return (
@@ -140,13 +103,17 @@ export default function BillGeneration() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => setSelectedPatient(patient)}
-                        className="inline-flex items-center gap-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        <FileText className="w-4 h-4" />
-                        Generate Bill
-                      </button>
+                      {!patient.billGenerated ? (
+                        <button
+                          onClick={() => setSelectedPatient(patient)}
+                          className="inline-flex items-center gap-1 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                        >
+                          <FileText className="w-4 h-4" />
+                          Generate Bill
+                        </button>
+                      ) : (
+                        <span className="text-green-600 font-medium">Bill Generated ✓</span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -163,7 +130,7 @@ export default function BillGeneration() {
       </div>
 
       <div className="text-sm text-gray-600">
-        Showing {filteredPatients.length} of {mockCompletedPatients.length} completed patients
+        Showing {filteredPatients.length} of {patients.length} completed patients
       </div>
 
       {/* Bill Modal */}
